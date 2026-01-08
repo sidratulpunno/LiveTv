@@ -139,23 +139,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
 
           // 3. Back Button
-          Positioned(
-            top: 40,
-            left: 20,
-            child: SafeArea(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.arrow_back, color: Colors.white),
-                ),
-              ),
-            ),
-          ),
+          // Positioned(
+          //   top: 40,
+          //   left: 20,
+          //   child: SafeArea(
+          //     child: GestureDetector(
+          //       onTap: () => Navigator.pop(context),
+          //       child: Container(
+          //         padding: EdgeInsets.all(8),
+          //         decoration: BoxDecoration(
+          //           color: Colors.white.withOpacity(0.1),
+          //           shape: BoxShape.circle,
+          //         ),
+          //         child: Icon(Icons.arrow_back, color: Colors.white),
+          //       ),
+          //     ),
+          //   ),
+          // ),
 
           // 4. Quality Selector
           if (widget.channel.streams.length > 1)

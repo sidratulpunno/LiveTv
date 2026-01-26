@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:shimmer/shimmer.dart';
 import '../../core/app_theme.dart';
 import '../../logic/providers.dart';
 import '../search_delegate.dart';
@@ -102,44 +101,40 @@ class HomeScreen extends ConsumerWidget {
       itemCount: 5,
       separatorBuilder: (ctx, i) => SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: AppTheme.cardBackground,
-          highlightColor: Colors.white.withOpacity(0.1),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            decoration: BoxDecoration(
-              color: AppTheme.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: AppTheme.cardBackground.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 16,
-                        color: Colors.white24,
-                      ),
-                      SizedBox(height: 8),
-                      Container(
-                        height: 12,
-                        color: Colors.white24,
-                      ),
-                    ],
-                  ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      height: 12,
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

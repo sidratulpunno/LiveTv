@@ -18,7 +18,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   ChewieController? _chewieController;
   int _streamIndex = 0;
   bool _isDisposed = false;
-  bool _showControls = true;
 
   @override
   void initState() {
@@ -93,10 +92,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _videoController = newVideoController;
         _chewieController = newChewieController;
       });
-    } catch (e) {
-      if (!mounted) return;
-      print("Error initializing stream: $e");
-    }
+      } catch (e) {
+        if (!mounted) return;
+      }
   }
 
   void _changeStream(int index) {

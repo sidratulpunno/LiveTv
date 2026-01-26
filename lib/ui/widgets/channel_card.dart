@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/app_theme.dart';
 import '../../data/models/channel_model.dart';
 
@@ -140,10 +139,7 @@ class ChannelCard extends StatelessWidget {
                                 Icons.star,
                                 size: 14,
                                 color: AppTheme.warningColor,
-                              )
-                                  .animate()
-                                  .scale()
-                                  .shimmer(duration: 600.ms),
+                              ),
                             ),
                         ],
                       ),

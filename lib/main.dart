@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'core/app_theme.dart';
 import 'ui/screens/home_screen.dart';
 
 void main() async {
@@ -17,14 +18,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter IPTV',
+      title: 'IPTV Player',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
-        scaffoldBackgroundColor: Color(0xFF121212),
-        appBarTheme: AppBarTheme(backgroundColor: Color(0xFF1E1E1E)),
-      ),
+      theme: AppTheme.darkTheme(),
       // --- CORRECTED SHORTCUTS HERE ---
       shortcuts: {
         // Maps the Android TV D-Pad Center button (Select) to ActivateIntent

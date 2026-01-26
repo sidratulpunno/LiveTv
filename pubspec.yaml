@@ -46,6 +46,11 @@ dependencies:
   audio_session: ^0.1.18
   focusable_control_builder: ^1.1.0
   # Android TV Focus
+  # UI Enhancements
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.2.2
+  shimmer: ^3.0.0
+  glass_kit: ^4.0.2
 
 dev_dependencies:
   flutter_test:

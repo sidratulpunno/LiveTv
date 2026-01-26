@@ -2,6 +2,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../core/app_theme.dart';
 import '../../data/models/channel_model.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   ChewieController? _chewieController;
   int _streamIndex = 0;
   bool _isDisposed = false;
+  bool _showControls = true;
 
   @override
   void initState() {
@@ -36,7 +38,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     final newVideoController = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
-      httpHeaders: {}, // Add headers if needed for mobile
+      httpHeaders: {},
     );
 
     try {
@@ -51,17 +53,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
         videoPlayerController: newVideoController,
         autoPlay: true,
         looping: false,
-        draggableProgressBar: false, // Live stream optimization
+        draggableProgressBar: false,
         isLive: true,
-        showOptions: false, // Hide default controls to use our custom ones
+        showOptions: false,
         aspectRatio: newVideoController.value.aspectRatio,
         errorBuilder: (context, error) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, color: Colors.white54, size: 40),
-              SizedBox(height: 10),
-              Text("Stream Error", style: TextStyle(color: Colors.white)),
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBackground,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: AppTheme.errorColor, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      "Stream Error",
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "Unable to load this stream",
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -112,15 +134,136 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // 1. Video Layer
           Center(
             child: _chewieController != null &&
-                _videoController != null &&
-                _videoController!.value.isInitialized
+                    _videoController != null &&
+                    _videoController!.value.isInitialized
                 ? Chewie(controller: _chewieController!)
-                : CircularProgressIndicator(color: Colors.white),
+                : Container(
+                    color: Colors.black,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation(
+                              AppTheme.accentColor,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "Loading stream...",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: AppTheme.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
 
-          // 2. Gradient Overlay (Top) - Ensures buttons are visible
+          // 2. Top Gradient Overlay
           Positioned(
             top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.8),
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Back Button with modern design
+          Positioned(
+            top: 20,
+            left: 16,
+            child: SafeArea(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  customBorder: CircleBorder(),
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: Colors.white.withOpacity(0.2)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child:
+                        Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 4. Channel Info
+          Positioned(
+            top: 60,
+            left: 16,
+            right: 80,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.channel.name,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.channel.streams.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.signal_cellular_alt,
+                            size: 16, color: AppTheme.successColor),
+                        SizedBox(width: 6),
+                        Text(
+                          widget.channel.streams[_streamIndex].quality ??
+                              "Auto",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppTheme.successColor),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // 5. Quality Selector
+          if (widget.channel.streams.length > 1)
+            Positioned(
+              top: 20,
+              right: 16,
+              child: SafeArea(
+                child: _buildQualitySelector(context),
+              ),
+            ),
+
+          // 6. Bottom Info
+          Positioned(
+            bottom: 0,
             left: 0,
             right: 0,
             height: 100,
@@ -130,106 +273,112 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.7),
                     Colors.transparent,
+                    Colors.black.withOpacity(0.5),
+                    Colors.black.withOpacity(0.8),
                   ],
                 ),
               ),
             ),
           ),
 
-          // 3. Back Button
-          // Positioned(
-          //   top: 40,
-          //   left: 20,
-          //   child: SafeArea(
-          //     child: GestureDetector(
-          //       onTap: () => Navigator.pop(context),
-          //       child: Container(
-          //         padding: EdgeInsets.all(8),
-          //         decoration: BoxDecoration(
-          //           color: Colors.white.withOpacity(0.1),
-          //           shape: BoxShape.circle,
-          //         ),
-          //         child: Icon(Icons.arrow_back, color: Colors.white),
-          //       ),
-          //     ),
-          //   ),
-          // ),
-
-          // 4. Quality Selector
-          if (widget.channel.streams.length > 1)
-            Positioned(
-              top: 40,
-              right: 20,
-              child: SafeArea(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: PopupMenuButton<int>(
-                    icon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.settings, color: Colors.white, size: 20),
-                        SizedBox(width: 4),
-                        Text(
-                          "Sources",
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
+          // 7. Stream Count at bottom
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.stream, size: 14, color: AppTheme.accentColor),
+                  SizedBox(width: 6),
+                  Text(
+                    '${widget.channel.streams.length} Stream${widget.channel.streams.length > 1 ? 's' : ''}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
                         ),
-                      ],
-                    ),
-                    tooltip: "Select Source",
-                    color: Color(0xFF1E1E1E), // Dark menu background
-                    onSelected: _changeStream,
-                    itemBuilder: (context) => List.generate(
-                      widget.channel.streams.length,
-                          (index) {
-                        final s = widget.channel.streams[index];
-                        String label = "Source ${index + 1}";
-                        if (s.quality != null && s.quality!.isNotEmpty) {
-                          label += " • ${s.quality}";
-                        }
-                        final isSelected = index == _streamIndex;
-
-                        return PopupMenuItem(
-                          value: index,
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSelected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_off,
-                                color: isSelected
-                                    ? Colors.blueAccent
-                                    : Colors.white54,
-                                size: 18,
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                label,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.blueAccent
-                                      : Colors.white,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
                   ),
-                ),
+                ],
               ),
             ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQualitySelector(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: PopupMenuButton<int>(
+        icon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 8),
+            Icon(Icons.hd, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text(
+              "Sources",
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+            SizedBox(width: 8),
+          ],
+        ),
+        tooltip: "Select Source",
+        color: AppTheme.darkSurface,
+        elevation: 12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onSelected: _changeStream,
+        itemBuilder: (context) => List.generate(
+          widget.channel.streams.length,
+          (index) {
+            final s = widget.channel.streams[index];
+            String label = "Source ${index + 1}";
+            if (s.quality != null && s.quality!.isNotEmpty) {
+              label += " • ${s.quality}";
+            }
+            final isSelected = index == _streamIndex;
+
+            return PopupMenuItem(
+              value: index,
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    color: isSelected ? AppTheme.accentColor : AppTheme.textHint,
+                    size: 18,
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isSelected
+                              ? AppTheme.accentColor
+                              : AppTheme.textPrimary,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

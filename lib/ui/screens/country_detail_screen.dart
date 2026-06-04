@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/app_theme.dart';
 import '../../data/models/channel_model.dart';
 import '../widgets/channel_card.dart';
@@ -25,8 +26,9 @@ class CountryDetailScreen extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => Navigator.pop(context),
-            customBorder: CircleBorder(),
-            child: Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
+            customBorder: const CircleBorder(),
+            child: const Icon(Icons.arrow_back_ios,
+                color: AppTheme.textPrimary),
           ),
         ),
         title: Column(
@@ -56,12 +58,41 @@ class CountryDetailScreen extends StatelessWidget {
           final channel = channels[index];
           return ChannelCard(
             channel: channel,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => PlayerScreen(channel: channel)),
+            onTap: () => _openPlayer(context, channel),
+          )
+              .animate()
+              .fadeIn(
+                  duration: 400.ms,
+                  curve: Curves.easeOut,
+                  delay: (index * 50).ms)
+              .slideY(begin: 0.15, end: 0);
+        },
+      ),
+    );
+  }
+
+  void _openPlayer(BuildContext context, UnifiedChannel channel) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            PlayerScreen(channel: channel),
+        transitionsBuilder:
+            (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+              child: child,
             ),
           );
         },
+        transitionDuration: Duration(milliseconds: 300),
       ),
     );
   }

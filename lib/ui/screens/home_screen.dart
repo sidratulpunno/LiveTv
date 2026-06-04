@@ -14,6 +14,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -28,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
                 .animate()
                 .fadeIn(duration: 600.ms, curve: Curves.easeOut)
                 .slideX(begin: -0.2),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Browse all channels',
               style: Theme.of(context).textTheme.bodyMedium,
@@ -40,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           Container(
-            margin: EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
               gradient: AppGradients.purpleToBlue,
               shape: BoxShape.circle,
@@ -60,7 +61,7 @@ class HomeScreen extends ConsumerWidget {
                     );
                   }
                 },
-                customBorder: CircleBorder(),
+                customBorder: const CircleBorder(),
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Icon(Icons.search, color: Colors.white, size: 22),
@@ -81,15 +82,35 @@ class HomeScreen extends ConsumerWidget {
               },
               backgroundColor: AppTheme.darkSurface,
               color: AppTheme.accentColor,
-              child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-                itemCount: countries.length,
-                separatorBuilder: (ctx, i) => SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final folder = countries[index];
-
-                  return _CountryCard(folder: folder, index: index);
-                },
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Container(
+                      height: 100,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppTheme.primaryColor.withOpacity(0.15),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    sliver: SliverList.separated(
+                      itemCount: countries.length,
+                      separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final folder = countries[index];
+                        return _CountryCard(folder: folder, index: index);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
     );
@@ -97,7 +118,7 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildLoadingState() {
     return ListView.separated(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 120, 16, 24),
       itemCount: 5,
       separatorBuilder: (ctx, i) => SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -178,15 +199,7 @@ class _CountryCardState extends State<_CountryCard>
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CountryDetailScreen(
-                countryName: widget.folder.name,
-                channels: widget.folder.channels,
-              ),
-            ),
-          );
+          _navigateToCountry(context);
         },
         onHover: (hovering) {
           if (hovering) {
@@ -201,13 +214,14 @@ class _CountryCardState extends State<_CountryCard>
             return Transform.scale(
               scale: 1 + (_hoverController.value * 0.02),
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
                   color: AppTheme.cardBackground,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1 +
-                        (_hoverController.value * 0.15)),
+                    color: Colors.white.withOpacity(
+                        0.1 + (_hoverController.value * 0.15)),
                     width: 1,
                   ),
                   boxShadow: [
@@ -215,13 +229,13 @@ class _CountryCardState extends State<_CountryCard>
                       color: AppTheme.primaryColor.withOpacity(
                           _hoverController.value * 0.3),
                       blurRadius: 12,
-                      offset: Offset(0, 4 + (_hoverController.value * 4)),
+                      offset: Offset(
+                          0, 4 + (_hoverController.value * 4)),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    // Flag Circle with gradient background
                     Container(
                       width: 60,
                       height: 60,
@@ -231,7 +245,8 @@ class _CountryCardState extends State<_CountryCard>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            color:
+                                AppTheme.primaryColor.withOpacity(0.3),
                             blurRadius: 8,
                           ),
                         ],
@@ -242,21 +257,22 @@ class _CountryCardState extends State<_CountryCard>
                       ),
                     ),
                     SizedBox(width: 16),
-
-                    // Text Info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             widget.folder.name,
-                            style: Theme.of(context).textTheme.headlineMedium,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium,
                           ),
                           SizedBox(height: 8),
                           Row(
                             children: [
                               Icon(Icons.play_circle_outline,
-                                  color: AppTheme.accentColor, size: 16),
+                                  color: AppTheme.accentColor,
+                                  size: 16),
                               SizedBox(width: 6),
                               Text(
                                 '${widget.folder.channelCount} Channels',
@@ -272,14 +288,12 @@ class _CountryCardState extends State<_CountryCard>
                         ],
                       ),
                     ),
-
-                    // Arrow Icon with animation
                     Transform.rotate(
                       angle: _hoverController.value * 0.3,
                       child: Icon(
                         Icons.arrow_forward_ios_rounded,
-                        color: Colors.white.withOpacity(0.5 +
-                            (_hoverController.value * 0.5)),
+                        color: Colors.white.withOpacity(
+                            0.5 + (_hoverController.value * 0.5)),
                         size: 20,
                       ),
                     ),
@@ -292,7 +306,49 @@ class _CountryCardState extends State<_CountryCard>
       ),
     )
         .animate()
-        .fadeIn(duration: 600.ms, curve: Curves.easeOut, delay: (widget.index * 100).ms)
+        .fadeIn(
+            duration: 600.ms,
+            curve: Curves.easeOut,
+            delay: (widget.index * 100).ms)
         .slideY(begin: 0.2, end: 0);
   }
+
+  void _navigateToCountry(BuildContext context) {
+    Navigator.push(
+      context,
+      _SlickRoute(
+        builder: (_) => CountryDetailScreen(
+          countryName: widget.folder.name,
+          channels: widget.folder.channels,
+        ),
+      ),
+    );
+  }
+}
+
+class _SlickRoute extends PageRouteBuilder {
+  final WidgetBuilder builder;
+
+  _SlickRoute({required this.builder})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              builder(context),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(0.15, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: Duration(milliseconds: 350),
+        );
 }

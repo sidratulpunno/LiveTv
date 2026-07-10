@@ -72,11 +72,16 @@ class CountryDetailScreen extends StatelessWidget {
   }
 
   void _openPlayer(BuildContext context, UnifiedChannel channel) {
+    final index = channels.indexOf(channel);
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            PlayerScreen(channel: channel),
+            PlayerScreen(
+          channel: channel,
+          allChannels: channels,
+          channelIndex: index,
+        ),
         transitionsBuilder:
             (context, animation, secondaryAnimation, child) {
           return FadeTransition(

@@ -9,7 +9,15 @@ import '../../data/models/channel_model.dart';
 
 class PlayerScreen extends StatefulWidget {
   final UnifiedChannel channel;
-  const PlayerScreen({Key? key, required this.channel}) : super(key: key);
+  final List<UnifiedChannel>? allChannels;
+  final int? channelIndex;
+
+  const PlayerScreen({
+    Key? key,
+    required this.channel,
+    this.allChannels,
+    this.channelIndex,
+  }) : super(key: key);
 
   @override
   _PlayerScreenState createState() => _PlayerScreenState();
@@ -23,6 +31,9 @@ class _PlayerScreenState extends State<PlayerScreen>
   bool _isDisposed = false;
   bool _isFullscreen = false;
   bool _controlsVisible = true;
+  bool _isMuted = false;
+  int _currentChannelIndex = 0;
+  List<UnifiedChannel>? _allChannels;
   Timer? _hideTimer;
   late AnimationController _controlsAnimController;
 
@@ -34,6 +45,8 @@ class _PlayerScreenState extends State<PlayerScreen>
       duration: Duration(milliseconds: 300),
     );
     _controlsAnimController.value = 1.0;
+    _currentChannelIndex = widget.channelIndex ?? 0;
+    _allChannels = widget.allChannels;
     _startHideTimer();
     _initPlayer();
   }
@@ -43,8 +56,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _isDisposed = true;
     _hideTimer?.cancel();
     _controlsAnimController.dispose();
-    _videoController?.dispose();
-    _chewieController?.dispose();
+    _disposeCurrentPlayer();
     _exitFullscreen();
     super.dispose();
   }
@@ -59,14 +71,59 @@ class _PlayerScreenState extends State<PlayerScreen>
     });
   }
 
+  void _showControls() {
+    setState(() => _controlsVisible = true);
+    _controlsAnimController.forward();
+    _startHideTimer();
+  }
+
   void _toggleControls() {
-    setState(() => _controlsVisible = !_controlsVisible);
     if (_controlsVisible) {
-      _controlsAnimController.forward();
-      _startHideTimer();
-    } else {
+      setState(() => _controlsVisible = false);
       _controlsAnimController.reverse();
+      _hideTimer?.cancel();
+    } else {
+      _showControls();
     }
+  }
+
+  UnifiedChannel get _currentChannel {
+    if (_allChannels != null && _currentChannelIndex < _allChannels!.length) {
+      return _allChannels![_currentChannelIndex];
+    }
+    return widget.channel;
+  }
+
+  void _navigateChannel(int direction) {
+    if (_allChannels == null || _allChannels!.length <= 1) return;
+    final newIndex = _currentChannelIndex + direction;
+    if (newIndex < 0 || newIndex >= _allChannels!.length) return;
+
+    _disposeCurrentPlayer();
+    setState(() {
+      _currentChannelIndex = newIndex;
+      _streamIndex = 0;
+    });
+    _showControls();
+    _initPlayer();
+  }
+
+  void _disposeCurrentPlayer() {
+    if (_videoController != null) {
+      _videoController!.removeListener(() {});
+    }
+    _chewieController?.dispose();
+    _chewieController = null;
+    _videoController?.dispose();
+    _videoController = null;
+  }
+
+  void _toggleMute() {
+    if (_videoController == null) return;
+    setState(() {
+      _isMuted = !_isMuted;
+      _videoController!.setVolume(_isMuted ? 0 : 1);
+    });
   }
 
   void _toggleFullscreen() {
@@ -102,7 +159,8 @@ class _PlayerScreenState extends State<PlayerScreen>
       // Ignore web errors
     }
 
-    final stream = widget.channel.streams[_streamIndex];
+    final channel = _currentChannel;
+    final stream = channel.streams[_streamIndex];
     final newVideoController = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
       httpHeaders: {},
@@ -167,21 +225,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   void _changeStream(int index) {
     if (_isDisposed) return;
-
-    final oldChewie = _chewieController;
-    final oldVideo = _videoController;
-
-    setState(() {
-      _chewieController = null;
-      _videoController = null;
-      _streamIndex = index;
-    });
-
-    Future.delayed(Duration.zero, () async {
-      oldChewie?.dispose();
-      await oldVideo?.dispose();
-      if (!_isDisposed) _initPlayer();
-    });
+    _disposeCurrentPlayer();
+    setState(() => _streamIndex = index);
+    if (!_isDisposed) _initPlayer();
   }
 
   @override
@@ -325,12 +371,12 @@ class _PlayerScreenState extends State<PlayerScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.channel.name,
+                  _currentChannel.name,
                   style: Theme.of(context).textTheme.headlineSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (widget.channel.streams.isNotEmpty) ...[
+                if (_currentChannel.streams.isNotEmpty) ...[
                   SizedBox(height: 4),
                   Row(
                     children: [
@@ -338,12 +384,21 @@ class _PlayerScreenState extends State<PlayerScreen>
                           size: 16, color: AppTheme.successColor),
                       SizedBox(width: 6),
                       Text(
-                        widget.channel.streams[_streamIndex].quality ??
+                        _currentChannel.streams[_streamIndex].quality ??
                             "Auto",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.successColor,
                             ),
                       ),
+                      if (_allChannels != null && _allChannels!.length > 1) ...[
+                        SizedBox(width: 12),
+                        Text(
+                          '${_currentChannelIndex + 1}/${_allChannels!.length}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -353,7 +408,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         ),
 
         // Quality Selector (top right)
-        if (widget.channel.streams.length > 1)
+        if (_currentChannel.streams.length > 1)
           Positioned(
             top: 0,
             right: 12,
@@ -395,9 +450,25 @@ class _PlayerScreenState extends State<PlayerScreen>
             child: Padding(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Mute/Unmute
+                  _BottomControlButton(
+                    icon: _isMuted ? Icons.volume_off : Icons.volume_up,
+                    onTap: _toggleMute,
+                  ),
+                  SizedBox(width: 16),
+
+                  // Previous Channel
+                  if (_allChannels != null && _allChannels!.length > 1)
+                    _BottomControlButton(
+                      icon: Icons.skip_previous,
+                      onTap: () => _navigateChannel(-1),
+                    ),
+
                   // Stream count badge
                   Container(
+                    margin: EdgeInsets.symmetric(horizontal: 12),
                     padding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -413,7 +484,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                             size: 14, color: AppTheme.accentColor),
                         SizedBox(width: 6),
                         Text(
-                          '${widget.channel.streams.length} Stream${widget.channel.streams.length > 1 ? 's' : ''}',
+                          '${_currentChannel.streams.length} Stream${_currentChannel.streams.length > 1 ? 's' : ''}',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -423,33 +494,20 @@ class _PlayerScreenState extends State<PlayerScreen>
                     ),
                   ),
 
-                  Spacer(),
+                  // Next Channel
+                  if (_allChannels != null && _allChannels!.length > 1)
+                    _BottomControlButton(
+                      icon: Icons.skip_next,
+                      onTap: () => _navigateChannel(1),
+                    ),
+                  SizedBox(width: 16),
 
                   // Fullscreen Toggle
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _toggleFullscreen,
-                        customBorder: CircleBorder(),
-                        child: Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Icon(
-                            _isFullscreen
-                                ? Icons.fullscreen_exit
-                                : Icons.fullscreen,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
+                  _BottomControlButton(
+                    icon: _isFullscreen
+                        ? Icons.fullscreen_exit
+                        : Icons.fullscreen,
+                    onTap: _toggleFullscreen,
                   ),
                 ],
               ),
@@ -494,9 +552,9 @@ class _PlayerScreenState extends State<PlayerScreen>
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onSelected: _changeStream,
         itemBuilder: (context) => List.generate(
-          widget.channel.streams.length,
+          _currentChannel.streams.length,
           (index) {
-            final s = widget.channel.streams[index];
+            final s = _currentChannel.streams[index];
             String label = "Source ${index + 1}";
             if (s.quality != null && s.quality!.isNotEmpty) {
               label += " • ${s.quality}";
@@ -531,6 +589,35 @@ class _PlayerScreenState extends State<PlayerScreen>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomControlButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _BottomControlButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.4),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
         ),
       ),
     );

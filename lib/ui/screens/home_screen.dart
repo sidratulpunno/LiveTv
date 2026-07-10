@@ -5,7 +5,6 @@ import '../../core/app_theme.dart';
 import '../../logic/providers.dart';
 import '../search_delegate.dart';
 import 'country_detail_screen.dart';
-import '../widgets/fifa_banner.dart';
 
 class HomeScreen extends ConsumerWidget {
   @override
@@ -100,12 +99,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: FifaBanner(),
-                    ),
-                  ),
+
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
                     sliver: SliverList.separated(

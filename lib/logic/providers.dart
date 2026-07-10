@@ -64,25 +64,29 @@ final countriesProvider = Provider<List<CountryFolder>>((ref) {
   if (!channelsAsync.hasValue) return [];
 
   final channels = channelsAsync.value!;
-  final Map<String, List<UnifiedChannel>> grouped = {};
+  final Map<String, List<UnifiedChannel>> liveTvGrouped = {};
+  final Map<String, List<UnifiedChannel>> apiGrouped = {};
 
-  // Grouping Logic
   for (var channel in channels) {
-    grouped.putIfAbsent(channel.country, () => []).add(channel);
+    if (channel.id.startsWith('livetv_')) {
+      liveTvGrouped.putIfAbsent(channel.country, () => []).add(channel);
+    } else {
+      apiGrouped.putIfAbsent(channel.country, () => []).add(channel);
+    }
   }
 
-  // Convert to List<CountryFolder> and Sort
-  final folders = grouped.entries.map((entry) {
-    final firstChannel = entry.value.first; // Get flag from first channel
-    return CountryFolder(
-        entry.key,
-        firstChannel.flag,
-        entry.value
-    );
-  }).toList();
+  final folders = <CountryFolder>[];
 
-  // Sort alphabetically
-  folders.sort((a, b) => a.name.compareTo(b.name));
+  for (final entry in liveTvGrouped.entries) {
+    folders.add(CountryFolder(entry.key, entry.value.first.flag, entry.value));
+  }
+
+  final sortedApi = apiGrouped.entries.map((entry) {
+    return CountryFolder(entry.key, entry.value.first.flag, entry.value);
+  }).toList();
+  sortedApi.sort((a, b) => a.name.compareTo(b.name));
+  folders.addAll(sortedApi);
+
   return folders;
 });
 

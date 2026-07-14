@@ -14,9 +14,6 @@ A cross-platform IPTV player built with Flutter. Supports live TV streaming from
 - **Dark theme** — modern dark UI with animations and glass-morphism effects
 - **Cross-platform** — Android, iOS, Web, Windows, macOS, Linux
 
-## Screenshots
-
-*(add screenshots here)*
 
 ## Getting Started
 
